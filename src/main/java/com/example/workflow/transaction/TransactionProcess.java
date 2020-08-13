@@ -13,7 +13,7 @@ public class TransactionProcess implements JavaDelegate {
     public void execute(DelegateExecution context) throws Exception {
         int patientId = (int) context.getVariable(PATIENT_ID);
         int insulinValue = (int) context.getVariable(INSULIN_VALUE);
-        System.out.format("Closing transaction with the insulin value  %d for patient %d because ",
+        System.out.format("Closing transaction with the insulin value  %d for patient %d  ",
                 insulinValue,
                 patientId);
         System.out.println();

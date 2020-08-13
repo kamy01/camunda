@@ -10,17 +10,9 @@ import javax.annotation.PostConstruct;
 @SpringBootApplication
 public class Application {
 
-  @Autowired
-  private RuntimeService runtimeService;
 
   public static void main(String[] args) {
     SpringApplication.run(Application.class);
-
-  }
-  @PostConstruct
-  public void after()
-  {
-   // runtimeService.startProcessInstanceByKey("medicalProcess");
   }
 
 }

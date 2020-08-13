@@ -17,6 +17,9 @@ public class InsulinProcess implements JavaDelegate {
         if (patientId == null) {
             System.out.println("Patient not found, generating new");
             patientId = RandomUtils.nextInt(101, 200);
+        } else {
+            System.out.format("Patient %d exists", patientId);
+            System.out.println();
         }
         int insulinValue = getInsulinValue((int) patientId);
         context.setVariable(INSULIN_VALUE, insulinValue);
