@@ -1,32 +1,24 @@
 package com.example.workflow.insulin;
 
-import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
 import static com.example.workflow.insulin.common.InsulinConstants.INSULIN_VALUE;
 import static com.example.workflow.insulin.common.InsulinConstants.PATIENT_ID;
+import static com.example.workflow.insulin.common.InsulinConstants.REGENERATE_INSULIN;
 
 @Component
 public class InsulinProcess implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution context) throws Exception {
-        Object patientId = context.getVariable(PATIENT_ID);
-        if (patientId == null) {
-            System.out.println("Patient not found, generating new");
-            patientId = RandomUtils.nextInt(101, 200);
-        } else {
-            System.out.format("Patient %d exists", patientId);
-            System.out.println();
+        boolean regenerate = (boolean) context.getVariable(REGENERATE_INSULIN);
+        if (regenerate) {
+            System.out.println("Regenerating insulin for patient: " + context.getVariable(PATIENT_ID));
+            context.setVariable(INSULIN_VALUE, InsulinGenerator.getInsulinValue(1));
         }
-        int insulinValue = getInsulinValue((int) patientId);
-        context.setVariable(INSULIN_VALUE, insulinValue);
-        context.setVariable(PATIENT_ID, patientId);
+
     }
 
-    private int getInsulinValue(int patientId) {
-        return RandomUtils.nextInt(1, 100);
-    }
 }
