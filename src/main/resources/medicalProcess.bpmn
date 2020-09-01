@@ -13,27 +13,11 @@
     <bpmn:sequenceFlow id="insulineFine" name="Yes" sourceRef="checkInsuline" targetRef="Gateway_1g75tf8">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{insulinValue &gt;=70 }</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="insulineNotFine" name="No" sourceRef="checkInsuline" targetRef="SendNotification">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{insulinValue &lt;  70}</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
     <bpmn:serviceTask id="Activity_0sdd8fz" name="Check insulin" camunda:class="com.example.workflow.insulin.InsulinProcess">
-      <bpmn:incoming>Flow_13xqdrw</bpmn:incoming>
       <bpmn:incoming>Flow_0p4f5qw</bpmn:incoming>
+      <bpmn:incoming>Flow_0ekaiuf</bpmn:incoming>
       <bpmn:outgoing>Flow_1cnbz7t</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_01o0fzm" sourceRef="SendNotification" targetRef="Event_0n1gz3j" />
-    <bpmn:serviceTask id="SendNotification" name="Send notification to doctor" camunda:class="com.example.workflow.notification.NotificateDoctor">
-      <bpmn:incoming>insulineNotFine</bpmn:incoming>
-      <bpmn:outgoing>Flow_01o0fzm</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:intermediateCatchEvent id="Event_0n1gz3j">
-      <bpmn:incoming>Flow_01o0fzm</bpmn:incoming>
-      <bpmn:outgoing>Flow_13xqdrw</bpmn:outgoing>
-      <bpmn:timerEventDefinition id="TimerEventDefinition_1mguryq">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT40S</bpmn:timeDuration>
-      </bpmn:timerEventDefinition>
-    </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_13xqdrw" sourceRef="Event_0n1gz3j" targetRef="Activity_0sdd8fz" />
     <bpmn:sequenceFlow id="Flow_0a260l4" sourceRef="Activity_1japq0e" targetRef="Gateway_1g75tf8" />
     <bpmn:sequenceFlow id="Flow_1a6ulcj" sourceRef="Gateway_1g75tf8" targetRef="Activity_0hfjo1r" />
     <bpmn:sequenceFlow id="Flow_194xqui" sourceRef="Activity_0hfjo1r" targetRef="endEvent1" />
@@ -45,14 +29,6 @@
       <bpmn:incoming>Flow_1a6ulcj</bpmn:incoming>
       <bpmn:outgoing>Flow_194xqui</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:parallelGateway id="Gateway_1g75tf8">
-      <bpmn:incoming>Flow_0a260l4</bpmn:incoming>
-      <bpmn:incoming>insulineFine</bpmn:incoming>
-      <bpmn:outgoing>Flow_1a6ulcj</bpmn:outgoing>
-    </bpmn:parallelGateway>
-    <bpmn:startEvent id="startEvent" name="Start">
-      <bpmn:outgoing>Flow_1mfbm7z</bpmn:outgoing>
-    </bpmn:startEvent>
     <bpmn:parallelGateway id="Gateway_09tpn22">
       <bpmn:incoming>Flow_06aoges</bpmn:incoming>
       <bpmn:outgoing>Flow_0i4z664</bpmn:outgoing>
@@ -66,9 +42,47 @@
       <bpmn:outgoing>Flow_06aoges</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_06aoges" sourceRef="Activity_09oarzh" targetRef="Gateway_09tpn22" />
+    <bpmn:callActivity id="CallAnotherProcess" name="Call doctor notification process" calledElement="doctorNotification">
+      <bpmn:extensionElements>
+        <camunda:in source="patientId" target="patientId" />
+        <camunda:in source="insulinValue" target="insulinValue" />
+        <camunda:out source="regenerateInsulin" target="regenerateInsulin" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_11o9nvd</bpmn:incoming>
+    </bpmn:callActivity>
+    <bpmn:startEvent id="startEvent" name="Start">
+      <bpmn:outgoing>Flow_1mfbm7z</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_12cgicu">
+      <bpmn:incoming>insulineNotFine</bpmn:incoming>
+      <bpmn:incoming>Flow_0uen911</bpmn:incoming>
+      <bpmn:outgoing>Flow_11o9nvd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0ekaiuf</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="insulineNotFine" name="No" sourceRef="checkInsuline" targetRef="Gateway_12cgicu">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{insulinValue &lt;  70}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:parallelGateway id="Gateway_1g75tf8">
+      <bpmn:incoming>insulineFine</bpmn:incoming>
+      <bpmn:incoming>Flow_0a260l4</bpmn:incoming>
+      <bpmn:outgoing>Flow_1a6ulcj</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_11o9nvd" sourceRef="Gateway_12cgicu" targetRef="CallAnotherProcess" />
+    <bpmn:sequenceFlow id="Flow_0ekaiuf" sourceRef="Gateway_12cgicu" targetRef="Activity_0sdd8fz" />
+    <bpmn:intermediateCatchEvent id="message1">
+      <bpmn:outgoing>Flow_0uen911</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0vi06hd" messageRef="Message_0tiinfr" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_0uen911" sourceRef="message1" targetRef="Gateway_12cgicu" />
+    <bpmn:userTask id="Activity_0ixr4jw" />
   </bpmn:process>
+  <bpmn:message id="Message_0tiinfr" name="sendInputMessage" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="checkInsulin">
+      <bpmndi:BPMNEdge id="Flow_06aoges_di" bpmnElement="Flow_06aoges">
+        <di:waypoint x="330" y="410" />
+        <di:waypoint x="375" y="410" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1cnbz7t_di" bpmnElement="Flow_1cnbz7t">
         <di:waypoint x="590" y="410" />
         <di:waypoint x="735" y="410" />
@@ -95,22 +109,12 @@
         <di:waypoint x="1030" y="530" />
         <di:waypoint x="1030" y="435" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_13xqdrw_di" bpmnElement="Flow_13xqdrw">
-        <di:waypoint x="1000" y="182" />
-        <di:waypoint x="1000" y="80" />
-        <di:waypoint x="540" y="80" />
-        <di:waypoint x="540" y="370" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_01o0fzm_di" bpmnElement="Flow_01o0fzm">
-        <di:waypoint x="920" y="200" />
-        <di:waypoint x="982" y="200" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1czx9pz_di" bpmnElement="insulineNotFine">
         <di:waypoint x="760" y="385" />
-        <di:waypoint x="760" y="200" />
-        <di:waypoint x="820" y="200" />
+        <di:waypoint x="760" y="150" />
+        <di:waypoint x="945" y="150" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="768" y="290" width="15" height="14" />
+          <dc:Bounds x="802" y="133" width="15" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_06i5ui3_di" bpmnElement="insulineFine">
@@ -124,9 +128,23 @@
         <di:waypoint x="188" y="410" />
         <di:waypoint x="230" y="410" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_06aoges_di" bpmnElement="Flow_06aoges">
-        <di:waypoint x="330" y="410" />
-        <di:waypoint x="375" y="410" />
+      <bpmndi:BPMNEdge id="Flow_11o9nvd_di" bpmnElement="Flow_11o9nvd">
+        <di:waypoint x="970" y="175" />
+        <di:waypoint x="970" y="203" />
+        <di:waypoint x="920" y="203" />
+        <di:waypoint x="920" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ekaiuf_di" bpmnElement="Flow_0ekaiuf">
+        <di:waypoint x="995" y="150" />
+        <di:waypoint x="1310" y="150" />
+        <di:waypoint x="1310" y="80" />
+        <di:waypoint x="540" y="80" />
+        <di:waypoint x="540" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0uen911_di" bpmnElement="Flow_0uen911">
+        <di:waypoint x="848" y="110" />
+        <di:waypoint x="970" y="110" />
+        <di:waypoint x="970" y="125" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_1i0908j_di" bpmnElement="endEvent1">
         <dc:Bounds x="1382" y="392" width="36" height="36" />
@@ -143,32 +161,38 @@
       <bpmndi:BPMNShape id="Activity_1l5zmuf_di" bpmnElement="Activity_0sdd8fz">
         <dc:Bounds x="490" y="370" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0p7m0mb_di" bpmnElement="SendNotification">
-        <dc:Bounds x="820" y="160" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0p8zeqi_di" bpmnElement="Event_0n1gz3j">
-        <dc:Bounds x="982" y="182" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1x7aw4z_di" bpmnElement="Activity_1japq0e">
         <dc:Bounds x="710" y="490" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_19kcjb1_di" bpmnElement="Activity_0hfjo1r">
         <dc:Bounds x="1170" y="370" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0j7tu0j_di" bpmnElement="Gateway_1g75tf8">
-        <dc:Bounds x="1005" y="385" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1jn4kzl_di" bpmnElement="startEvent">
-        <dc:Bounds x="152" y="392" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="158" y="435" width="25" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0u94ygc_di" bpmnElement="Gateway_09tpn22">
         <dc:Bounds x="375" y="385" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_09oarzh_di" bpmnElement="Activity_09oarzh">
         <dc:Bounds x="230" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0jbsbqy_di" bpmnElement="startEvent">
+        <dc:Bounds x="152" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="435" width="25" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_12cgicu_di" bpmnElement="Gateway_12cgicu">
+        <dc:Bounds x="945" y="125" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1qzf2tu_di" bpmnElement="Gateway_1g75tf8">
+        <dc:Bounds x="1005" y="385" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0himvui_di" bpmnElement="CallAnotherProcess">
+        <dc:Bounds x="880" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1a9ooye_di" bpmnElement="message1">
+        <dc:Bounds x="812" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0cokyut_di" bpmnElement="Activity_0ixr4jw">
+        <dc:Bounds x="180" y="180" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
